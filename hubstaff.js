@@ -31,6 +31,9 @@ let memo = { accessToken: null, expiresAt: 0, refreshToken: null };
 const REFRESH_BACKOFF_MS = 5 * 60_000;
 let refreshBlockedUntil = 0;
 let lastRefreshError = null;
+// CRITICAL: Hubstaff rotates refresh tokens and revokes the whole family if one is used
+// twice. Serialize exchanges so two concurrent requests can never exchange the same token.
+let refreshInFlight = null;
 
 async function loadTokenFile() {
   try {
@@ -44,13 +47,13 @@ async function saveTokenFile(data) {
   await writeFile(TOKEN_FILE, JSON.stringify(data, null, 2));
 }
 
-async function getAccessToken() {
-  // 1) Valid in-memory token?
-  if (memo.accessToken && Date.now() < memo.expiresAt - 60_000) return memo.accessToken;
+async function getAccessToken(force = false) {
+  // 1) Valid in-memory token? (skip when forcing a refresh after a 401)
+  if (!force && memo.accessToken && Date.now() < memo.expiresAt - 60_000) return memo.accessToken;
 
   // 2) Valid token cached on disk (survives restarts, avoids the refresh rate limit)?
   const stored = await loadTokenFile();
-  if (stored.access_token && stored.expires_at && Date.now() < stored.expires_at - 60_000) {
+  if (!force && stored.access_token && stored.expires_at && Date.now() < stored.expires_at - 60_000) {
     memo = {
       accessToken: stored.access_token,
       expiresAt: stored.expires_at,
@@ -59,7 +62,16 @@ async function getAccessToken() {
     return memo.accessToken;
   }
 
-  // 3) Exchange the refresh token for a fresh access token.
+  // 3) Need a fresh token — serialize so two callers never exchange the same refresh
+  // token concurrently (that would trip Hubstaff's reuse detection and revoke everything).
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = doRefresh(stored, force).finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
+async function doRefresh(stored, force) {
   // Respect backoff: if a recent exchange failed, don't pummel the rate-limited endpoint.
   if (Date.now() < refreshBlockedUntil) {
     throw new Error(lastRefreshError || "Token refresh backing off (rate limit).");
@@ -82,8 +94,8 @@ async function getAccessToken() {
     refreshBlockedUntil = Date.now() + REFRESH_BACKOFF_MS;
     lastRefreshError = `Token refresh failed (${res.status}): ${text}`;
     // If we're rate-limited but still hold a (just-expired) token, keep using it rather
-    // than hard-failing the dashboard.
-    if (stored.access_token) {
+    // than hard-failing the dashboard. (Not when forcing — that token was just rejected.)
+    if (!force && stored.access_token) {
       console.warn(`[hubstaff] token refresh failed (${res.status}); reusing cached token`);
       memo = {
         accessToken: stored.access_token,
@@ -113,7 +125,7 @@ async function getAccessToken() {
   return memo.accessToken;
 }
 
-async function api(pathname, params = {}) {
+async function api(pathname, params = {}, _retried = false) {
   const token = await getAccessToken();
   const url = new URL(API_BASE + pathname);
   for (const [k, v] of Object.entries(params)) {
@@ -123,6 +135,14 @@ async function api(pathname, params = {}) {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   if (!res.ok) {
+    // Access token can be invalidated before its nominal expiry (Hubstaff revokes the
+    // previous token when a new one is issued). On 401, force one fresh exchange and retry.
+    if (res.status === 401 && !_retried) {
+      memo.accessToken = null;
+      memo.expiresAt = 0;
+      await getAccessToken(true);
+      return api(pathname, params, true);
+    }
     const text = await res.text();
     throw new Error(`Hubstaff ${pathname} failed (${res.status}): ${text}`);
   }
@@ -200,9 +220,13 @@ export async function getDashboard() {
     "daily_activities"
   );
 
-  // 4) Recent activities -> online + current project
-  const threshMin = Number(process.env.ONLINE_THRESHOLD_MIN || 10);
-  const since = new Date(now.getTime() - threshMin * 60_000);
+  // 4) Recent activities -> online + current project.
+  // Hubstaff records activity in 10-minute slots, published with a few minutes' lag, so
+  // while someone is actively tracking, their newest *available* slot start is already
+  // ~10-13 min old. A 10-min window would therefore flip a working person to "offline"
+  // for part of every cycle. Default the threshold to 15 min to absorb the slot + lag.
+  const threshMin = Number(process.env.ONLINE_THRESHOLD_MIN || 15);
+  const since = new Date(now.getTime() - (threshMin + 2) * 60_000); // small fetch buffer
   let recent = [];
   try {
     recent = await collectPaged(

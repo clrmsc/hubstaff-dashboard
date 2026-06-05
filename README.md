@@ -53,7 +53,7 @@ token error, paste a fresh token into `.env` and delete `.token.json` once.
 | `HUBSTAFF_PAT`         | —               | Personal Access Token from developer.hubstaff.com  |
 | `HUBSTAFF_ORG_ID`      | —               | organization id (auto-picks first org if empty)    |
 | `HUBSTAFF_TZ`          | `Europe/Moscow` | timezone for "today"/weekly day boundaries         |
-| `ONLINE_THRESHOLD_MIN` | `10`            | minutes since last activity to still count online  |
+| `ONLINE_THRESHOLD_MIN` | `15`            | minutes since last activity slot to still count online (≥13 — Hubstaff slots lag ~10 min) |
 | `CACHE_TTL_SEC`        | `60`            | min seconds between Hubstaff calls                 |
 | `PORT`                 | `3000`          | web port                                           |
 

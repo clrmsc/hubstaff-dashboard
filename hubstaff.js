@@ -295,7 +295,13 @@ function shapeDashboard({ now, weekDates, todayStr, users, members, projects, da
       activity: totalTracked ? Math.round((totalOverall / totalTracked) * 100) : 0,
     };
 
-    const seen = lastSeen.get(id);
+    // "Working now" — use the member's last_client_activity. It updates roughly every
+    // 10 min while the desktop client is tracking, so for an actively-working person it's
+    // at most ~10-13 min old. This is fresher and more reliable than the activity-slot
+    // feed (which publishes 10-min buckets with extra lag and flickered people offline).
+    const lcaMs = m.last_client_activity ? new Date(m.last_client_activity).getTime() : null;
+    const slotMs = lastSeen.get(id) || null;
+    const seen = Math.max(lcaMs || 0, slotMs || 0) || null;
     const online = seen ? now.getTime() - seen <= threshMs : false;
 
     const projId = currentProject.get(id) || lastDailyProject.get(id);

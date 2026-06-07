@@ -82,6 +82,17 @@ journalctl -u hubstaff-dashboard -f        # live logs
 ./kiosk.sh                                  # launch the kiosk manually
 ```
 
+### Updating
+
+```bash
+cd ~/hubstaff-dashboard
+./update.sh
+```
+
+`update.sh` pulls the latest code (hard reset — repo history may have been
+rewritten), reinstalls dependencies only if they changed, and restarts the
+service. Your `.env` and `.token.json` are left untouched.
+
 ### Manual way
 
 ```bash

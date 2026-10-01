@@ -34,6 +34,11 @@ function pillClass(a) {
   if (a > 50) return "green";
   return "orange";
 }
+// compact hours for a tiny cell: "6.3" or "10"
+function hCompact(h) {
+  if (h <= 0) return "";
+  return h >= 10 ? String(Math.round(h)) : String(Math.round(h * 10) / 10);
+}
 function daysInMonth(month) {
   const [y, m] = month.split("-").map(Number);
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
@@ -53,7 +58,13 @@ function dayGrid(daily) {
     if (d.hours > 0) {
       c.className = "dcell";
       c.style.background = heatBg(d.activity);
-      c.textContent = d.activity;
+      const dh = document.createElement("span");
+      dh.className = "dh";
+      dh.textContent = hCompact(d.hours);
+      const dp = document.createElement("span");
+      dp.className = "dp";
+      dp.textContent = d.activity;
+      c.append(dh, dp);
       c.title = `Day ${d.day}: ${d.activity}% · ${fmtHours(d.hours)}`;
     } else {
       c.className = "dcell off";

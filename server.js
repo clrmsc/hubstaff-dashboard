@@ -7,8 +7,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 const { default: express } = await import("express");
-const { getMockDashboard } = await import("./mock.js");
-const { getDashboard } = await import("./hubstaff.js");
+const { getMockDashboard, getMockReport } = await import("./mock.js");
+const { getDashboard, getMonthlyReport } = await import("./hubstaff.js");
 const app = express();
 
 const USE_MOCK = String(process.env.USE_MOCK ?? "true").toLowerCase() !== "false";
@@ -35,6 +35,27 @@ app.get("/api/dashboard", async (req, res) => {
     cache.error = err.message;
     // Serve stale data if we have any; otherwise surface the error.
     if (cache.data) return res.json({ ...cache.data, stale: true, error: err.message });
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// Monthly report. ?month=YYYY-MM (defaults to current month). Cached per month.
+const REPORT_TTL_MS = 10 * 60 * 1000; // months change slowly; cache longer
+const reportCache = new Map(); // month -> { data, at }
+
+app.get("/api/report", async (req, res) => {
+  const month = /^\d{4}-\d{2}$/.test(req.query.month || "") ? req.query.month : null;
+  const key = month || "current";
+  const hit = reportCache.get(key);
+  if (hit && Date.now() - hit.at < REPORT_TTL_MS) return res.json(hit.data);
+
+  try {
+    const data = USE_MOCK ? getMockReport(month) : await getMonthlyReport(month);
+    reportCache.set(key, { data, at: Date.now() });
+    res.json(data);
+  } catch (err) {
+    console.error("[report] load failed:", err.message);
+    if (hit) return res.json({ ...hit.data, stale: true, error: err.message });
     res.status(502).json({ error: err.message });
   }
 });

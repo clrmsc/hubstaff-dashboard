@@ -59,3 +59,21 @@ export function getMockDashboard() {
 
   return { source: "mock", updatedAt: new Date().toISOString(), people };
 }
+
+export function getMockReport(monthStr) {
+  const now = new Date();
+  const month = /^\d{4}-\d{2}$/.test(monthStr || "")
+    ? monthStr
+    : now.toISOString().slice(0, 7);
+  const [y, m] = month.split("-").map(Number);
+  const seedBase = y * 100 + m;
+
+  const people = PEOPLE.map(([name, project], i) => {
+    const days = Math.round(rng(seedBase + i * 5) * 8 + 14); // 14..22 working days
+    const hours = +(days * (rng(seedBase + i * 9) * 3 + 5)).toFixed(2); // ~5-8h/day
+    const activity = Math.round(rng(seedBase + i * 13) * 45 + 40); // 40..85 %
+    return { id: i + 1, name, avatar: null, hours, activity, days, project };
+  });
+
+  return { source: "mock", month, updatedAt: now.toISOString(), people };
+}

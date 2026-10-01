@@ -212,3 +212,180 @@ body {
     height: 46px;
   }
 }
+
+/* ---------- Monthly report page ---------- */
+.navlink {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  margin-right: 6px;
+}
+.navlink:hover {
+  text-decoration: underline;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.monthnav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.navbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.navbtn:hover:not(:disabled) {
+  background: var(--panel-2);
+}
+.navbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.month-label {
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 150px;
+  text-align: center;
+}
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sort-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+.pillbtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.pillbtn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.summary {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.tile {
+  flex: 1;
+  min-width: 120px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.tile .tval {
+  font-size: 22px;
+  font-weight: 700;
+}
+.tile .tlab {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+/* report table */
+.rthead,
+.rrow {
+  display: grid;
+  grid-template-columns: 34px minmax(150px, 1fr) 150px 92px 64px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+}
+.tbody .rrow {
+  height: 58px;
+  border-bottom: 1px solid var(--line);
+}
+.tbody .rrow:last-child {
+  border-bottom: none;
+}
+.col-rank {
+  text-align: center;
+}
+.col-num {
+  text-align: left;
+}
+.rank {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.rrow:nth-child(1) .rank,
+.rrow:nth-child(2) .rank,
+.rrow:nth-child(3) .rank {
+  color: var(--accent);
+}
+
+.hours-cell {
+  min-width: 0;
+}
+.hours-cell .hval {
+  font-size: 14px;
+  font-weight: 600;
+}
+.hours-cell .hbar {
+  margin-top: 5px;
+  height: 5px;
+  background: var(--bar-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hours-cell .hbar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.days {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* activity pill (report) */
+.pill {
+  display: inline-block;
+  min-width: 44px;
+  text-align: center;
+  padding: 3px 8px;
+  border-radius: 11px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pill.green {
+  background: var(--green);
+}
+.pill.orange {
+  background: #d08b24;
+}
+.pill.red {
+  background: #c0564f;
+}

@@ -325,3 +325,77 @@ function shapeDashboard({ now, weekDates, todayStr, users, members, projects, da
 
   return { source: "hubstaff", updatedAt: now.toISOString(), people: visible };
 }
+
+// Monthly report: total hours worked and average activity % per member for one month.
+// monthStr is "YYYY-MM"; defaults to the current month in the org timezone.
+export async function getMonthlyReport(monthStr) {
+  const orgId = await resolveOrgId();
+  const now = new Date();
+  const month = /^\d{4}-\d{2}$/.test(monthStr || "")
+    ? monthStr
+    : dateStrInTz(now, ORG_TZ).slice(0, 7);
+  const [y, m] = month.split("-").map(Number);
+  const startStr = `${month}-01`;
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate(); // day 0 of next month = last day of this
+  const endStr = `${month}-${String(lastDay).padStart(2, "0")}`;
+
+  // Members + users
+  const membersResp = await api(`/organizations/${orgId}/members`, {
+    include: "users",
+    page_limit: 200,
+  });
+  const users = new Map((membersResp.users || []).map((u) => [u.id, u]));
+  const members = (membersResp.members || []).filter((m) => m.membership_status === "active");
+
+  // Project id -> name
+  const projectList = await collectPaged(
+    `/organizations/${orgId}/projects`,
+    { page_limit: 500, status: "active" },
+    "projects"
+  );
+  const projects = new Map(projectList.map((p) => [p.id, p.name]));
+
+  // Daily activities across the whole month
+  const daily = await collectPaged(
+    `/organizations/${orgId}/activities/daily`,
+    { "date[start]": startStr, "date[stop]": endStr, page_limit: 500 },
+    "daily_activities"
+  );
+
+  // Aggregate per user
+  const agg = new Map();
+  const ensure = (id) => {
+    if (!agg.has(id)) agg.set(id, { tracked: 0, overall: 0, days: new Set(), projTracked: new Map() });
+    return agg.get(id);
+  };
+  for (const mem of members) ensure(mem.user_id);
+  for (const d of daily) {
+    const a = ensure(d.user_id);
+    const tr = d.tracked || 0;
+    a.tracked += tr;
+    a.overall += d.overall || 0;
+    if (tr > 0) a.days.add(d.date);
+    if (d.project_id) a.projTracked.set(d.project_id, (a.projTracked.get(d.project_id) || 0) + tr);
+  }
+
+  const people = members
+    .map((mem) => {
+      const id = mem.user_id;
+      const u = users.get(id) || {};
+      const a = agg.get(id);
+      let topProj = null, best = -1;
+      for (const [pid, tr] of a.projTracked) if (tr > best) { best = tr; topProj = pid; }
+      return {
+        id,
+        name: u.name || u.email || `User ${id}`,
+        avatar: u.avatar_url || u.avatar || null,
+        hours: +(a.tracked / 3600).toFixed(2),
+        activity: a.tracked ? Math.round((a.overall / a.tracked) * 100) : 0,
+        days: a.days.size,
+        project: topProj ? projects.get(topProj) || null : null,
+      };
+    })
+    .filter((p) => p.hours > 0);
+
+  return { source: "hubstaff", month, updatedAt: now.toISOString(), people };
+}

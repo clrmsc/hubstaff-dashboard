@@ -68,11 +68,26 @@ export function getMockReport(monthStr) {
   const [y, m] = month.split("-").map(Number);
   const seedBase = y * 100 + m;
 
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+
   const people = PEOPLE.map(([name, project], i) => {
-    const days = Math.round(rng(seedBase + i * 5) * 8 + 14); // 14..22 working days
-    const hours = +(days * (rng(seedBase + i * 9) * 3 + 5)).toFixed(2); // ~5-8h/day
-    const activity = Math.round(rng(seedBase + i * 13) * 45 + 40); // 40..85 %
-    return { id: i + 1, name, avatar: null, hours, activity, days, project };
+    const perDay = [];
+    for (let day = 1; day <= lastDay; day++) {
+      const dow = new Date(Date.UTC(y, m - 1, day)).getUTCDay(); // 0=Sun..6=Sat
+      const weekend = dow === 0 || dow === 6;
+      const worked = !weekend && rng(seedBase + i * 7 + day * 3) > 0.18;
+      perDay.push({
+        day,
+        hours: worked ? +(rng(seedBase + i * 11 + day) * 5 + 3).toFixed(2) : 0,
+        activity: worked ? Math.round(rng(seedBase + i * 13 + day * 2) * 55 + 35) : 0,
+      });
+    }
+    const workedDays = perDay.filter((d) => d.hours > 0);
+    const hours = +workedDays.reduce((s, d) => s + d.hours, 0).toFixed(2);
+    const activity = workedDays.length
+      ? Math.round(workedDays.reduce((s, d) => s + d.activity * d.hours, 0) / (hours || 1))
+      : 0;
+    return { id: i + 1, name, avatar: null, hours, activity, days: workedDays.length, project, daily: perDay };
   });
 
   return { source: "mock", month, updatedAt: now.toISOString(), people };

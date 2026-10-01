@@ -365,7 +365,8 @@ export async function getMonthlyReport(monthStr) {
   // Aggregate per user
   const agg = new Map();
   const ensure = (id) => {
-    if (!agg.has(id)) agg.set(id, { tracked: 0, overall: 0, days: new Set(), projTracked: new Map() });
+    if (!agg.has(id))
+      agg.set(id, { tracked: 0, overall: 0, days: new Set(), projTracked: new Map(), byDay: new Map() });
     return agg.get(id);
   };
   for (const mem of members) ensure(mem.user_id);
@@ -376,6 +377,10 @@ export async function getMonthlyReport(monthStr) {
     a.overall += d.overall || 0;
     if (tr > 0) a.days.add(d.date);
     if (d.project_id) a.projTracked.set(d.project_id, (a.projTracked.get(d.project_id) || 0) + tr);
+    const c = a.byDay.get(d.date) || { tracked: 0, overall: 0 };
+    c.tracked += tr;
+    c.overall += d.overall || 0;
+    a.byDay.set(d.date, c);
   }
 
   const people = members
@@ -385,6 +390,18 @@ export async function getMonthlyReport(monthStr) {
       const a = agg.get(id);
       let topProj = null, best = -1;
       for (const [pid, tr] of a.projTracked) if (tr > best) { best = tr; topProj = pid; }
+      // per-day breakdown for the whole month (day 1..lastDay)
+      const perDay = [];
+      for (let day = 1; day <= lastDay; day++) {
+        const ds = `${month}-${String(day).padStart(2, "0")}`;
+        const c = a.byDay.get(ds);
+        const tr = c ? c.tracked : 0;
+        perDay.push({
+          day,
+          hours: +(tr / 3600).toFixed(2),
+          activity: tr ? Math.round((c.overall / tr) * 100) : 0,
+        });
+      }
       return {
         id,
         name: u.name || u.email || `User ${id}`,
@@ -393,6 +410,7 @@ export async function getMonthlyReport(monthStr) {
         activity: a.tracked ? Math.round((a.overall / a.tracked) * 100) : 0,
         days: a.days.size,
         project: topProj ? projects.get(topProj) || null : null,
+        daily: perDay,
       };
     })
     .filter((p) => p.hours > 0);

@@ -34,6 +34,35 @@ function pillClass(a) {
   if (a > 50) return "green";
   return "orange";
 }
+function daysInMonth(month) {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+// green heatmap: faint for low activity, solid for high; transparent when no work
+function heatBg(activity) {
+  if (!activity) return "transparent";
+  const alpha = (0.16 + 0.84 * (activity / 100)).toFixed(2);
+  return `rgba(46, 204, 113, ${alpha})`;
+}
+function dayGrid(daily) {
+  const g = document.createElement("div");
+  g.className = "daygrid";
+  g.style.setProperty("--n", daily.length || 1);
+  for (const d of daily) {
+    const c = document.createElement("div");
+    if (d.hours > 0) {
+      c.className = "dcell";
+      c.style.background = heatBg(d.activity);
+      c.textContent = d.activity;
+      c.title = `Day ${d.day}: ${d.activity}% · ${fmtHours(d.hours)}`;
+    } else {
+      c.className = "dcell off";
+      c.title = `Day ${d.day}: —`;
+    }
+    g.appendChild(c);
+  }
+  return g;
+}
 
 // Default to the previous (last completed) month — e.g. in October it opens September.
 // Use the ‹ › arrows to switch to the current month or further back.
@@ -66,6 +95,18 @@ function render() {
     tile(fmtHours(totalHours), "total hours"),
     tile(avgAct + "%", "avg activity")
   );
+
+  // day-number header above the grid
+  const gh = document.getElementById("grid-head");
+  const nd = daysInMonth(state.month);
+  gh.style.setProperty("--n", nd);
+  gh.innerHTML = "";
+  for (let day = 1; day <= nd; day++) {
+    const n = document.createElement("div");
+    n.className = "dnum";
+    n.textContent = day;
+    gh.appendChild(n);
+  }
 
   rowsEl.innerHTML = "";
   if (!people.length) {
@@ -138,7 +179,7 @@ function row(p, rank, maxH) {
   daysCell.className = "col-num days";
   daysCell.textContent = p.days;
 
-  r.append(rk, member, hoursCell, actCell, daysCell);
+  r.append(rk, member, dayGrid(p.daily || []), hoursCell, actCell, daysCell);
   return r;
 }
 

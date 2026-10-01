@@ -58,13 +58,7 @@ function dayGrid(daily) {
     if (d.hours > 0) {
       c.className = "dcell";
       c.style.background = heatBg(d.activity);
-      const dh = document.createElement("span");
-      dh.className = "dh";
-      dh.textContent = hCompact(d.hours);
-      const dp = document.createElement("span");
-      dp.className = "dp";
-      dp.textContent = d.activity;
-      c.append(dh, dp);
+      c.textContent = hCompact(d.hours);
       c.title = `Day ${d.day}: ${d.activity}% · ${fmtHours(d.hours)}`;
     } else {
       c.className = "dcell off";

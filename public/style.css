@@ -338,28 +338,20 @@ body {
   text-align: center;
 }
 .dcell {
-  height: 28px;
+  height: 24px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 1.05;
+  font-size: 9.5px;
+  font-weight: 600;
   color: var(--text);
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.03);
   overflow: hidden;
 }
-.dcell .dh {
-  font-size: 7.5px;
-  font-weight: 500;
-  opacity: 0.8;
-}
-.dcell .dp {
-  font-size: 9px;
-  font-weight: 700;
-}
 .dcell.off {
   background: rgba(255, 255, 255, 0.02);
+  color: transparent;
 }
 .tbody .rrow {
   height: 58px;
@@ -486,14 +478,9 @@ body.report .app {
     font-size: 12px;
   }
   body.report .dcell {
-    height: 38px;
+    height: 32px;
+    font-size: 13px;
     border-radius: 4px;
-  }
-  body.report .dcell .dh {
-    font-size: 10px;
-  }
-  body.report .dcell .dp {
-    font-size: 12px;
   }
   body.report .tbody .rrow {
     height: 74px;

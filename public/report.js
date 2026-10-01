@@ -71,6 +71,7 @@ let state = { month: shiftMonth(thisMonth(), -1), sort: "hours", data: null };
 function sortPeople(people) {
   const arr = [...people];
   if (state.sort === "activity") arr.sort((a, b) => b.activity - a.activity || b.hours - a.hours);
+  else if (state.sort === "name") arr.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   else arr.sort((a, b) => b.hours - a.hours || b.activity - a.activity);
   return arr;
 }
@@ -198,7 +199,13 @@ async function load() {
 
 prevBtn.onclick = () => { state.month = shiftMonth(state.month, -1); load(); };
 nextBtn.onclick = () => { if (state.month < thisMonth()) { state.month = shiftMonth(state.month, 1); load(); } };
-sortHoursBtn.onclick = () => { state.sort = "hours"; sortHoursBtn.classList.add("active"); sortActivityBtn.classList.remove("active"); render(); };
-sortActivityBtn.onclick = () => { state.sort = "activity"; sortActivityBtn.classList.add("active"); sortHoursBtn.classList.remove("active"); render(); };
+const sortBtns = document.querySelectorAll(".sort .pillbtn");
+sortBtns.forEach((btn) => {
+  btn.onclick = () => {
+    state.sort = btn.dataset.sort;
+    sortBtns.forEach((b) => b.classList.toggle("active", b === btn));
+    render();
+  };
+});
 
 load();

@@ -389,3 +389,96 @@ body {
 .pill.red {
   background: #c0564f;
 }
+
+/* ---------- Report on a large desktop / 2K monitor ---------- */
+body.report .app {
+  max-width: 1500px;
+}
+
+/* ~1440p (2K) and wider: use the space, scale type up */
+@media (min-width: 1800px) {
+  body.report {
+    font-size: 18px;
+  }
+  body.report .app {
+    max-width: 1800px;
+    padding: 40px 48px 56px;
+  }
+  body.report .topbar h1 {
+    font-size: 30px;
+  }
+  body.report .meta {
+    font-size: 15px;
+  }
+  body.report .navlink {
+    font-size: 15px;
+  }
+  body.report .month-label {
+    font-size: 20px;
+    min-width: 190px;
+  }
+  body.report .navbtn {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+  body.report .pillbtn,
+  body.report .sort-label {
+    font-size: 15px;
+  }
+  body.report .tile {
+    padding: 20px 24px;
+  }
+  body.report .tile .tval {
+    font-size: 30px;
+  }
+  body.report .tile .tlab {
+    font-size: 13px;
+  }
+  body.report .rthead,
+  body.report .rrow {
+    grid-template-columns: 48px minmax(240px, 1fr) 240px 130px 100px;
+    padding: 0 28px;
+  }
+  body.report .tbody .rrow {
+    height: 74px;
+  }
+  body.report .rthead {
+    height: 54px;
+    font-size: 15px;
+  }
+  body.report .name {
+    font-size: 18px;
+  }
+  body.report .proj {
+    font-size: 14px;
+  }
+  body.report .rank {
+    font-size: 17px;
+  }
+  body.report .hours-cell .hval,
+  body.report .days {
+    font-size: 17px;
+  }
+  body.report .hours-cell .hbar {
+    height: 6px;
+  }
+  body.report .pill {
+    font-size: 14px;
+    min-width: 52px;
+    padding: 4px 10px;
+  }
+}
+
+/* very wide / full 2K-2.5K */
+@media (min-width: 2400px) {
+  body.report {
+    font-size: 20px;
+  }
+  body.report .app {
+    max-width: 2100px;
+  }
+  body.report .tbody .rrow {
+    height: 82px;
+  }
+}

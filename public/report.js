@@ -35,7 +35,9 @@ function pillClass(a) {
   return "orange";
 }
 
-let state = { month: thisMonth(), sort: "hours", data: null };
+// Default to the previous (last completed) month — e.g. in October it opens September.
+// Use the ‹ › arrows to switch to the current month or further back.
+let state = { month: shiftMonth(thisMonth(), -1), sort: "hours", data: null };
 
 function sortPeople(people) {
   const arr = [...people];
